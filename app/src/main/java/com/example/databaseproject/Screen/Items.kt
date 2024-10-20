@@ -1,273 +1,231 @@
-package com.example.DatabaseProject.Screen
+package com.example.databaseproject.Screen
 
 import android.annotation.SuppressLint
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.DatabaseProject.DAO.UserDAO
-import com.example.DatabaseProject.Model.User
-import com.example.DatabaseProject.Repository.UserRepository
+import androidx.navigation.compose.rememberNavController
+import com.example.databaseproject.BottomNavigationBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.*
+
+import com.example.databaseproject.Model.Miembro
+import com.example.databaseproject.Repository.MiembroRepository
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
-fun UserApp(userRepository: UserRepository) {
+fun MiembroApp(miembroRepository: MiembroRepository) {
     var nombre by remember { mutableStateOf("") }
     var apellido by remember { mutableStateOf("") }
-    var edad by remember { mutableStateOf("") }
+    var fechaInscripcion by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
     var isEditMode by rememberSaveable { mutableStateOf(false) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
-    var userToDelete by rememberSaveable { mutableStateOf<User?>(null) }
+    var miembroToDelete by rememberSaveable { mutableStateOf<Miembro?>(null) }
     var id by rememberSaveable { mutableStateOf("") }
-    var users by rememberSaveable { mutableStateOf(listOf<User>()) }
+    var miembros by rememberSaveable { mutableStateOf(listOf<Miembro>()) }
 
     val context = LocalContext.current
 
-    Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxSize(),
-    ) {
-        TextField(
-            value = nombre,
-            onValueChange = { nombre = it },
-            label = { Text(text = "Nombre") }
-        )
+    val navController = rememberNavController() // Crear NavController
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextField(
-            value = apellido,
-            onValueChange = { apellido = it },
-            label = { Text(text = "Apellido") }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextField(
-            value = edad,
-            onValueChange = { input ->
-                if (input.all { it.isDigit() }) {
-                    edad = input
-                }
-            },
-            label = { Text(text = "Edad") },
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(onClick = {
-            if (nombre.isBlank()) {
-                Toast.makeText(context, "El nombre no puede estar vacío", Toast.LENGTH_SHORT).show()
-                return@Button
-            }
-
-            if (apellido.isBlank()) {
-                Toast.makeText(context, "El apellido no puede estar vacío", Toast.LENGTH_SHORT).show()
-                return@Button
-            }
-
-            val edadInt = edad.toIntOrNull()
-            if (edadInt == null || edadInt <= 0) {
-                Toast.makeText(context, "La edad debe ser un número mayor que cero", Toast.LENGTH_SHORT).show()
-                return@Button
-            }
-
-            val user = User(
-                nombre = nombre,
-                apellido = apellido,
-                edad = edadInt
+    Scaffold(
+        bottomBar = { BottomNavigationBar(navController = navController) } // Pasamos el navController a BottomNavigationBar
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues) // Aplicamos el padding del Scaffold
+                .padding(16.dp) // Padding adicional
+        ) {
+            // Campo de entrada para el nombre del miembro
+            TextField(
+                value = nombre,
+                onValueChange = { nombre = it },
+                label = { Text(text = "Nombre") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
             )
 
-            scope.launch {
-                withContext(Dispatchers.IO) {
-                    if (isEditMode) {
-                        userRepository.updateUser(user)
-                        isEditMode = false
-                    } else {
-                        userRepository.insert(user)
+            // Campo de entrada para el apellido del miembro
+            TextField(
+                value = apellido,
+                onValueChange = { apellido = it },
+                label = { Text(text = "Apellido") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+
+            // Campo de entrada para la fecha de inscripción del miembro
+            TextField(
+                value = fechaInscripcion,
+                onValueChange = { fechaInscripcion = it },
+                label = { Text(text = "Fecha de Inscripción") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp)) // Espacio adicional antes de los botones
+
+            // Botón para registrar o actualizar un miembro
+            Button(
+                onClick = {
+                    if (nombre.isBlank()) {
+                        Toast.makeText(context, "El nombre no puede estar vacío", Toast.LENGTH_SHORT).show()
+                        return@Button
                     }
-                }
-                Toast.makeText(
-                    context,
-                    if (isEditMode) "Usuario Actualizado" else "Usuario Registrado",
-                    Toast.LENGTH_SHORT
-                ).show()
-                clearFields(
-                    onClear = {
-                        nombre = ""
-                        apellido = ""
-                        edad = ""
-                        id = ""
+
+                    if (apellido.isBlank()) {
+                        Toast.makeText(context, "El apellido no puede estar vacío", Toast.LENGTH_SHORT).show()
+                        return@Button
                     }
-                )
-                users = withContext(Dispatchers.IO) {
-                    userRepository.getAllUser()
-                }
-            }
-        }) {
-            Text(text = "Registrar")
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+                    if (fechaInscripcion.isBlank()) {
+                        Toast.makeText(context, "La fecha de inscripción no puede estar vacía", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
 
-        var users by remember {
-            mutableStateOf(listOf<User>())
-        }
+                    val miembro = Miembro(
+                        nombre = nombre,
+                        apellido = apellido,
+                        fecha_inscripcion = fechaInscripcion
+                    )
 
-        Button(onClick = {
-            scope.launch {
-                users = withContext(Dispatchers.IO) {
-                    userRepository.getAllUser()
-                }
-            }
-        }) {
-            Text(text = "Listar")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(8.dp)
-        ) {
-            items(users.size) { index ->
-                val user = users[index]
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    elevation = CardDefaults.cardElevation(4.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(text = "ID: ${user.id}")
-                            Text(text = "Nombre: ${user.nombre}")
-                            Text(text = "Apellido: ${user.apellido}")
-                            Text(text = "Edad: ${user.edad}")
-                        }
-                        Row {
-                            // Icono para editar
-                            IconButton(onClick = {
-                                nombre = user.nombre
-                                apellido = user.apellido
-                                edad = user.edad.toString()
-                                id = user.id.toString()
-                                isEditMode = true
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Editar",
-                                    tint = Color.Green
-                                )
-                            }
-
-                            // Icono para borrar
-                            IconButton(onClick = {
-                                userToDelete = user
-                                showDeleteDialog = true
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Borrar",
-                                    tint = Color.Red
-                                )
+                    scope.launch {
+                        withContext(Dispatchers.IO) {
+                            if (isEditMode) {
+                                miembroRepository.update(miembro)
+                                isEditMode = false
+                            } else {
+                                miembroRepository.insert(miembro)
                             }
                         }
-                    }
-                }
-            }
-        }
-
-        if (showDeleteDialog) {
-            AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
-                title = { Text(text = "Confirmar Eliminación") },
-                text = { Text(text = "¿Estás seguro de que deseas eliminar este usuario?") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            userToDelete?.let { user ->
-                                scope.launch {
-                                    withContext(Dispatchers.IO) {
-                                        userRepository.deleteById(user.id)
-                                    }
-                                    Toast.makeText(context, "Usuario Eliminado", Toast.LENGTH_SHORT).show()
-                                    users = withContext(Dispatchers.IO) {
-                                        userRepository.getAllUser()
-                                    }
-                                }
+                        Toast.makeText(
+                            context,
+                            if (isEditMode) "Miembro Actualizado" else "Miembro Registrado",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        clearFields(
+                            onClear = {
+                                nombre = ""
+                                apellido = ""
+                                fechaInscripcion = ""
+                                id = ""
                             }
-                            showDeleteDialog = false
-                            clearFields(
-                                onClear = {
-                                    nombre = ""
-                                    apellido = ""
-                                    edad = ""
-                                    id = ""
-                                }
-                            )
+                        )
+                        miembros = withContext(Dispatchers.IO) {
+                            miembroRepository.getAllMiembros()
                         }
-                    ) {
-                        Text(text = "Eliminar")
                     }
                 },
-                dismissButton = {
-                    Button(onClick = { showDeleteDialog = false }) {
-                        Text(text = "Cancelar")
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Text(text = if (isEditMode) "Actualizar" else "Registrar")
+            }
+
+            // Botón para listar los miembros
+            Button(
+                onClick = {
+                    scope.launch {
+                        miembros = withContext(Dispatchers.IO) {
+                            miembroRepository.getAllMiembros()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Text(text = "Listar Miembros")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp)) // Espacio antes de la lista de miembros
+
+            // Scroll para la lista de miembros
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(1f) // Permite que LazyColumn tome el espacio restante y sea desplazable
+            ) {
+                items(miembros.size) { index ->
+                    val miembro = miembros[index]
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(text = "ID: ${miembro.id}")
+                                Text(text = "Nombre: ${miembro.nombre}")
+                                Text(text = "Apellido: ${miembro.apellido}")
+                                Text(text = "Fecha de Inscripción: ${miembro.fecha_inscripcion}")
+                            }
+                            Row {
+                                // Icono para editar
+                                IconButton(onClick = {
+                                    nombre = miembro.nombre
+                                    apellido = miembro.apellido
+                                    fechaInscripcion = miembro.fecha_inscripcion
+                                    id = miembro.id.toString()
+                                    isEditMode = true
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Editar",
+                                        tint = Color.Green
+                                    )
+                                }
+
+                                // Icono para borrar
+                                IconButton(onClick = {
+                                    miembroToDelete = miembro
+                                    showDeleteDialog = true
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Borrar",
+                                        tint = Color.Red
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
-            )
+            }
         }
     }
 }
-
 fun clearFields(onClear: () -> Unit) {
     onClear()
 }
-

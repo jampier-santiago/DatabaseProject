@@ -17,7 +17,7 @@ interface MiembroDAO {
     @Query("SELECT * FROM miembros")
     suspend fun getAllMiembros(): List<Miembro>
 
-    @Query ("DELETE FROM users WHERE id = :miembroId")
+    @Query ("DELETE FROM miembros WHERE id = :miembroId")
     suspend fun deleteById(miembroId: Int): Int
 
     @Update

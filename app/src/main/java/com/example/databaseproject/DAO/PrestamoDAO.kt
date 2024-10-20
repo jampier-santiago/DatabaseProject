@@ -5,12 +5,10 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-
-
 import com.example.databaseproject.Model.Prestamo
+import com.example.databaseproject.POJO.PrestamoConDetalles
 
 @Dao
-
 interface PrestamoDAO {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(prestamo: Prestamo)
@@ -29,7 +27,7 @@ interface PrestamoDAO {
         INNER JOIN miembros ON prestamos.miembroId = miembros.id
         INNER JOIN libros ON prestamos.libroId = libros.id
     """)
-    suspend fun obtenerPrestamosConDetalles(): List<Prestamo>
+    suspend fun obtenerPrestamosConDetalles(): List<PrestamoConDetalles>
 
     @Update
     suspend fun update(prestamo: Prestamo): Int
