@@ -32,8 +32,8 @@ class BibliotecaRepository(
         libroDao.insert(libro)
     }
 
-    suspend fun getAllLibros(): List<Libro> {
-        return libroDao.getAllLibros()
+    suspend fun getAllLibros(): List<LibroConAutor> {
+        return libroDao.getAllLibrosConAutores()
     }
 
     // Operaciones para Miembros

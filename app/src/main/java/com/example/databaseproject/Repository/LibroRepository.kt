@@ -2,6 +2,7 @@ package com.example.databaseproject.Repository
 
 import com.example.databaseproject.DAO.LibroDAO
 import com.example.databaseproject.Model.Libro
+import com.example.databaseproject.POJO.LibroConAutor
 
 
 class LibroRepository(private val libroDao: LibroDAO) {
@@ -9,8 +10,8 @@ class LibroRepository(private val libroDao: LibroDAO) {
         libroDao.insert(libro)
     }
 
-    suspend fun getAllLibros(): List<Libro> {
-        return libroDao.getAllLibros()
+    suspend fun getAllLibros(): List<LibroConAutor> {
+        return libroDao.getAllLibrosConAutores()
     }
 
     suspend fun deleteById(libroId: Int): Int {

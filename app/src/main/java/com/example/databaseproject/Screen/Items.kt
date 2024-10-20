@@ -34,26 +34,29 @@ fun MiembroApp(miembroRepository: MiembroRepository) {
     var nombre by remember { mutableStateOf("") }
     var apellido by remember { mutableStateOf("") }
     var fechaInscripcion by remember { mutableStateOf("") }
+    var miembroId by rememberSaveable { mutableStateOf(0) } // Guardar el ID del miembro para editar
     val scope = rememberCoroutineScope()
 
-    var isEditMode by rememberSaveable { mutableStateOf(false) }
+    var isEditMode by rememberSaveable { mutableStateOf(false) } // Controla si estamos en modo edición
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
-    var miembroToDelete by rememberSaveable { mutableStateOf<Miembro?>(null) }
-    var id by rememberSaveable { mutableStateOf("") }
+    var miembroToDelete by rememberSaveable { mutableStateOf<Miembro?>(null) } // Variable para guardar el miembro a eliminar
     var miembros by rememberSaveable { mutableStateOf(listOf<Miembro>()) }
 
     val context = LocalContext.current
 
-    val navController = rememberNavController() // Crear NavController
+    // Formatear la fecha a un formato más legible
+    val dateFormatter = SimpleDateFormat("dd 'de' MMMM 'de' yyyy", Locale.getDefault())
+
+    val navController = rememberNavController()
 
     Scaffold(
-        bottomBar = { BottomNavigationBar(navController = navController) } // Pasamos el navController a BottomNavigationBar
+        bottomBar = { BottomNavigationBar(navController = navController) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues) // Aplicamos el padding del Scaffold
-                .padding(16.dp) // Padding adicional
+                .padding(paddingValues)
+                .padding(16.dp)
         ) {
             // Campo de entrada para el nombre del miembro
             TextField(
@@ -79,13 +82,13 @@ fun MiembroApp(miembroRepository: MiembroRepository) {
             TextField(
                 value = fechaInscripcion,
                 onValueChange = { fechaInscripcion = it },
-                label = { Text(text = "Fecha de Inscripción") },
+                label = { Text(text = "Fecha de Inscripción (yyyy-MM-dd)") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp)) // Espacio adicional antes de los botones
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Botón para registrar o actualizar un miembro
             Button(
@@ -106,6 +109,7 @@ fun MiembroApp(miembroRepository: MiembroRepository) {
                     }
 
                     val miembro = Miembro(
+                        id = if (isEditMode) miembroId else 0,
                         nombre = nombre,
                         apellido = apellido,
                         fecha_inscripcion = fechaInscripcion
@@ -130,7 +134,7 @@ fun MiembroApp(miembroRepository: MiembroRepository) {
                                 nombre = ""
                                 apellido = ""
                                 fechaInscripcion = ""
-                                id = ""
+                                miembroId = 0
                             }
                         )
                         miembros = withContext(Dispatchers.IO) {
@@ -161,43 +165,58 @@ fun MiembroApp(miembroRepository: MiembroRepository) {
                 Text(text = "Listar Miembros")
             }
 
-            Spacer(modifier = Modifier.height(16.dp)) // Espacio antes de la lista de miembros
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Scroll para la lista de miembros
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxHeight()
-                    .weight(1f) // Permite que LazyColumn tome el espacio restante y sea desplazable
+                    .weight(1f)
             ) {
                 items(miembros.size) { index ->
                     val miembro = miembros[index]
+
+                    // Parsear la fecha de inscripción para darle formato legible
+                    val formattedDate = try {
+                        val parsedDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(miembro.fecha_inscripcion)
+                        parsedDate?.let { dateFormatter.format(it) } ?: miembro.fecha_inscripcion
+                    } catch (e: Exception) {
+                        miembro.fecha_inscripcion // Si hay un error al parsear, mostrar la fecha original
+                    }
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
-                        Row(
+                        Column( // Cambiamos Row por Column
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.SpaceBetween // Espaciado entre el texto y los iconos
                         ) {
+                            // Texto con los datos del miembro
                             Column {
                                 Text(text = "ID: ${miembro.id}")
                                 Text(text = "Nombre: ${miembro.nombre}")
                                 Text(text = "Apellido: ${miembro.apellido}")
-                                Text(text = "Fecha de Inscripción: ${miembro.fecha_inscripcion}")
+                                Text(text = "Fecha de Inscripción: $formattedDate")
                             }
-                            Row {
+                            Spacer(modifier = Modifier.height(8.dp)) // Añadir espacio antes de los iconos
+
+                            // Row para los iconos de editar y borrar
+                            Row(
+                                horizontalArrangement = Arrangement.End,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
                                 // Icono para editar
                                 IconButton(onClick = {
                                     nombre = miembro.nombre
                                     apellido = miembro.apellido
                                     fechaInscripcion = miembro.fecha_inscripcion
-                                    id = miembro.id.toString()
+                                    miembroId = miembro.id
                                     isEditMode = true
                                 }) {
                                     Icon(
@@ -223,9 +242,43 @@ fun MiembroApp(miembroRepository: MiembroRepository) {
                     }
                 }
             }
+
+            if (showDeleteDialog && miembroToDelete != null) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    title = { Text(text = "Confirmar Eliminación") },
+                    text = { Text(text = "¿Estás seguro de que deseas eliminar este miembro?") },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    miembroToDelete?.let { miembro ->
+                                        withContext(Dispatchers.IO) {
+                                            miembroRepository.deleteById(miembro.id)
+                                        }
+                                        Toast.makeText(context, "Miembro eliminado", Toast.LENGTH_SHORT).show()
+                                        miembros = withContext(Dispatchers.IO) {
+                                            miembroRepository.getAllMiembros()
+                                        }
+                                    }
+                                }
+                                showDeleteDialog = false
+                            }
+                        ) {
+                            Text(text = "Eliminar")
+                        }
+                    },
+                    dismissButton = {
+                        Button(onClick = { showDeleteDialog = false }) {
+                            Text(text = "Cancelar")
+                        }
+                    }
+                )
+            }
         }
     }
 }
+
 fun clearFields(onClear: () -> Unit) {
     onClear()
 }
